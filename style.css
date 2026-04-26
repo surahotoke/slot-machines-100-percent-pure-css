@@ -1,0 +1,854 @@
+html {
+  overflow: hidden;
+  animation: decode linear, time 999999s linear both;
+  animation-timeline: scroll(self x), auto;
+  animation-range: -1px;
+  --active-index: --decode(0);
+  --active-class: --to-class(var(--active-index));
+  --bet-aps: --active-class(bet-button, running, paused);
+  --play-aps: --active-class(play-button, running, paused);
+  --bonus-aps: if(
+    style(var(--time) < 1): running;
+    style(--get-bit(var(--slot-state-num), 5) = 1): paused;
+    else: --active-class(play-button, running, paused);
+  );
+  --free-aps: if(
+    style(var(--time) < 1): running;
+    else: --active-class(play-button, running, paused);
+  );
+  --roll1-stop-animation: --active-class(reel1-button, none, stop-roll1);
+  --roll2-stop-animation: --active-class(reel2-button, none, stop-roll2);
+  --roll3-stop-animation: --active-class(reel3-button, none, stop-roll3);
+  --slot-state-num: --decode(1);
+  --slot-state: if(
+    style(mod(var(--slot-state-num), 8) = 0): stopped;
+    else: rolling;
+  );
+  --reel1-state: if(
+    style(--get-bit(var(--slot-state-num), 0) = 0): stopped;
+    else: rolling;
+  );
+  --reel2-state: if(
+    style(--get-bit(var(--slot-state-num), 1) = 0): stopped;
+    else: rolling;
+  );
+  --reel3-state: if(
+    style(--get-bit(var(--slot-state-num), 2) = 0): stopped;
+    else: rolling;
+  );
+  --reel1-aps: if(
+    style(--reel1-state: rolling): running;
+    else: paused;
+  );
+  --reel2-aps: if(
+    style(--reel2-state: rolling): running;
+    else: paused;
+  );
+  --reel3-aps: if(
+    style(--reel3-state: rolling): running;
+    else: paused;
+  );
+  --bonus-animation: if(
+    style(--get-bit(var(--slot-state-num), 3) = 1): none;
+    else: bonus-count-shift;
+  );
+  --free-animation: if(
+    style(--get-bit(var(--slot-state-num), 4) = 1): none;
+    else: free-count-shift;
+  );
+  counter-reset: active-index slot-state;
+}
+
+html::after {
+  content: counter(slot-state, encode1) counter(active-index, encode0);
+  display: block;
+  white-space: pre;
+  font-size: 0;
+  line-height: 1px;
+  letter-spacing: 1px;
+  word-spacing: 120px;
+  text-indent: 100dvw;
+}
+
+body {
+  margin: 0;
+  --n: 76;
+  --init-duration: calc(var(--n) * .1s);
+  height: calc(var(--n) * 1px);
+  overflow: hidden;
+  animation:
+    sibling-init var(--init-duration) steps(var(--n), jump-start) forwards,
+    roll1 2s linear infinite var(--reel1-aps),
+    roll2 2s linear infinite var(--reel2-aps),
+    roll3 2s linear infinite var(--reel3-aps),
+    bet-mode-shift 300ms linear infinite var(--bet-aps),
+    var(--roll1-stop-animation) 1ms step-end both var(--play-aps),
+    var(--roll2-stop-animation) 1ms step-end both var(--play-aps),
+    var(--roll3-stop-animation) 1ms step-end both var(--play-aps),
+    var(--free-animation) 500ms linear var(--free-aps),
+    var(--bonus-animation) 500ms linear var(--bonus-aps),
+    scroll-text 92s linear infinite;
+  --sibling-count: var(--_sibling-i);
+  --is-loaded: if(
+    style(--n: --sibling-count()): 1;
+    else: 0;
+  );
+  columns: --sibling-count();
+  scroll-marker-group: before;
+  --seed1: 55;
+  --seed2: 40;
+  --seed3: 161;
+  --roll1-num: round(var(--roll1) / 18deg);
+  --roll2-num: round(var(--roll2) / 18deg);
+  --roll3-num: round(var(--roll3) / 18deg);
+  --symbol1-top: --get-symbol-num(mod(var(--roll1-num) + 1, 20), var(--seed1));
+  --symbol1-middle: --get-symbol-num(mod(var(--roll1-num), 20), var(--seed1));
+  --symbol1-bottom: --get-symbol-num(mod(var(--roll1-num) - 1, 20), var(--seed1));
+  --symbol2-top: --get-symbol-num(mod(var(--roll2-num) + 1, 20), var(--seed2));
+  --symbol2-middle: --get-symbol-num(mod(var(--roll2-num), 20), var(--seed2));
+  --symbol2-bottom: --get-symbol-num(mod(var(--roll2-num) - 1, 20), var(--seed2));
+  --symbol3-top: --get-symbol-num(mod(var(--roll3-num) + 1, 20), var(--seed3));
+  --symbol3-middle: --get-symbol-num(mod(var(--roll3-num), 20), var(--seed3));
+  --symbol3-bottom: --get-symbol-num(mod(var(--roll3-num) - 1, 20), var(--seed3));
+  --match-top: if(
+    style(
+      (--slot-state: stopped) and
+      (var(--symbol1-top) = var(--symbol2-top) = var(--symbol3-top))): var(--symbol1-top);
+    else: -1;
+  );
+  --match-middle: if(
+    style(
+      (--slot-state: stopped) and
+      (var(--symbol1-middle) = var(--symbol2-middle) = var(--symbol3-middle))): var(--symbol1-middle);
+    else: -1;
+  );
+  --match-bottom: if(
+    style(
+      (--slot-state: stopped) and
+      (var(--symbol1-bottom) = var(--symbol2-bottom) = var(--symbol3-bottom))): var(--symbol1-bottom);
+    else: -1;
+  );
+  --match-slash: if(
+    style(
+      (--slot-state: stopped) and
+      (var(--symbol1-bottom) = var(--symbol2-middle) = var(--symbol3-top))): var(--symbol1-bottom);
+    else: -1;
+  );
+  --match-backslash: if(
+    style(
+      (--slot-state: stopped) and
+      (var(--symbol1-top) = var(--symbol2-middle) = var(--symbol3-bottom))): var(--symbol1-top);
+    else: -1;
+  );
+  --is-bonus-match: if(
+    style(
+      (--slot-state: stopped) and (
+        (--match-top: 7) or (--match-middle: 7) or (--match-bottom: 7) or
+        (--match-slash: 7) or (--match-backslash: 7)
+      )): 1;
+    else: 0;
+  );
+  --is-free-match: if(
+    style(
+      (--slot-state: stopped) and (
+        (--match-top: 6) or (--match-middle: 6) or (--match-bottom: 6) or
+        (--match-slash: 6) or (--match-backslash: 6)
+      )): 1;
+    else: 0;
+  );
+  --slot-mode: if(
+    style((--bonus-count: -1) and (--is-bonus-match: 0)): classic;
+    else: bonus;
+  );
+  --hatch-color: if(
+    style(--slot-mode: bonus): gold;
+    else: silver;
+  );
+  --surface-color: if(
+    style(--slot-mode: bonus): palegoldenrod;
+    else: lightgray;
+  );
+  --is-free-mode: if(
+    style((--free-count: -1) and (--is-free-match: 0)): 0;
+    else: 1;
+  );
+  --payment-mode: if(
+    style(--is-free-mode: 0): normal;
+    else: free;
+  );
+  --is-bet-disabled: if(
+    style((--slot-state: rolling) or (--slot-mode: bonus) or (--payment-mode: free)): 1;
+    else: 0;
+  );
+  --bet-amount: if(
+    style(mod(var(--bet-mode), 6) = 0): 1;
+    style(--bet-mode: 1): 2;
+    style(--bet-mode: 2): 3;
+    style(--bet-mode: 3): 5;
+    style(--bet-mode: 4): 10;
+    style(--bet-mode: 5): 40;
+  );
+  --win: calc(var(--bet-amount) * if(style(--slot-mode: bonus): 2; else: 1) * (
+    --symbol-rate(var(--match-top)) +
+    --symbol-rate(var(--match-middle)) +
+    --symbol-rate(var(--match-bottom)) +
+    --symbol-rate(var(--match-slash)) +
+    --symbol-rate(var(--match-backslash))
+  ));
+  --win-timer: if(style(--slot-state: stopped): 1);
+  transition: if(style(--slot-state: stopped): --win-timer 4s);
+  --is-win-visible: if(
+    style(((not (--win: 0)) or (--is-bonus-match: 1) or (--is-free-match: 1)) and (0 < var(--win-timer) < 1)): 1;
+    else: 0;
+  );
+  --time-sec: mod(round(down, var(--time)), 60);
+  --time-min: mod(round(down, var(--time) / 60), 60);
+  --time-hour: mod(round(down, var(--time) / 3600), 24);
+  counter-reset:
+    free-count var(--free-count)
+    bonus-count var(--bonus-count)
+    bet-amount var(--bet-amount)
+    win var(--win)
+    time-hour var(--time-hour)
+    time-min var(--time-min)
+    time-sec var(--time-sec);
+  counter-set: slot-state calc(
+    32 * var(--is-free-mode)
+    + 16 * var(--is-free-match)
+    + 8 * var(--is-bonus-match)
+    + 4 * var(--is-roll3-stopped)
+    + 2 * var(--is-roll2-stopped)
+    + var(--is-roll1-stopped));
+}
+
+body::before {
+  counter-reset: loading round(101 * --sibling-count() / var(--n));
+  content: '100% Pure CSS\A   Slot Machines   \A\A\Aloading... ( ' counter(loading, decimal-leading-zero) '\9% )';
+  position: absolute;
+  position-anchor: --main;
+  position-area: center;
+  background: #f00a;
+  width: stretch;
+  height: stretch;
+  border-radius: 2dvmin;
+  display: --loaded(none, grid);
+  place-items: center;
+  font: 900 8dvmin / 14dvmin Impact;
+  white-space: pre;
+}
+
+body::after {
+  display: block;
+  height: 100%;
+  content: '';
+}
+
+::scroll-marker-group {
+  margin-top: 5dvmin;
+  margin-inline: auto;
+  box-sizing: border-box;
+  width: 70dvmin;
+  height: 90dvmin;
+  padding: 13dvmin 15dvmin 6dvmin;
+  border: solid;
+  border-radius: 2dvmin;
+  anchor-name: --main;
+  display: grid;
+  grid: 32dvmin 10dvmin 5dvmin 1fr / repeat(3, 1fr);
+  gap: 4dvmin;
+  perspective: 800px;
+  perspective-origin: center 30%;
+  transform-style: preserve-3d;
+}
+
+::column {
+  animation: sibling-init var(--init-duration) linear reverse --loaded(paused, running);
+  --sibling-index: var(--_sibling-i);
+  --class: --loaded(--to-class(var(--sibling-index)), .);
+  --role: --to-role(var(--class));
+  --element: --to-element(var(--role), var(--class));
+  --reel-state: if(
+    style((--class: reel1-face) or (--class: reel1-button)): var(--reel1-state);
+    style((--class: reel2-face) or (--class: reel2-button)): var(--reel2-state);
+    style((--class: reel3-face) or (--class: reel3-button)): var(--reel3-state);
+  );
+  --roll: if(
+    style(--class: reel1-face): var(--roll1);
+    style(--class: reel2-face): var(--roll2);
+    style(--class: reel3-face): var(--roll3);
+  );
+  --roll-now: if(
+    style(--reel-state: rolling): var(--roll);
+    else: round(var(--roll), 18deg);
+  );
+  --seed: if(
+    style(--class: reel1-face): var(--seed1);
+    style(--class: reel2-face): var(--seed2);
+    style(--class: reel3-face): var(--seed3);
+  );
+}
+
+::column::scroll-marker {
+  text-decoration: none;
+  color: if(
+    style(--element: button): white;
+    style(--class: footer): white;
+    else: black;
+  );
+  counter-reset: --role(reel-face, symbol-num --get-symbol-num(mod(--sibling-index(), 20), var(--seed)), .);
+  content: if(
+    style((--role: reel-face) and (--slot-mode: bonus)): counter(symbol-num, bonus-symbols);
+    style(--role: reel-face): counter(symbol-num, classic-symbols);
+    style(--role: reel-button): 'stop!!';
+    style(--class: bet-button): 'bet：' counter(bet-amount);
+    style(--class: play-button): 'play';
+    style((--class: win-display) and (--is-free-match: 1) and (--is-bonus-match: 1) and (--win: 0)): 'FREE & BONUS';
+    style((--class: win-display) and (--is-free-match: 1) and (--is-bonus-match: 1)): 'FREE & BONUS\A WIN：' counter(win);
+    style((--class: win-display) and (--is-free-match: 1) and (--win: 0)): 'FREE TIME!!';
+    style((--class: win-display) and (--is-bonus-match: 1) and (--win: 0)): 'BONUS TIME!!';
+    style((--class: win-display) and (--is-free-match: 1)): 'FREE TIME!!\A WIN：' counter(win);
+    style((--class: win-display) and (--is-bonus-match: 1)): 'BONUS TIME!!\A WIN：' counter(win);
+    style(--class: win-display): 'WIN：' counter(win);
+    style(--class: header):
+      counter(time-hour, decimal-leading-zero) ':'
+      counter(time-min, decimal-leading-zero) ':'
+      counter(time-sec, decimal-leading-zero);
+    style((--class: paytable) and (--slot-mode: bonus)):
+      'P\0332\2006\0332 A\0332\2006\0332Y\0332\2006\0332T\0332\2006\0332 A\0332\2006\0332 B\0332\2006\0332L\0332\2006\0332 E\0332\A'
+      '🔩\9x  4\A'
+      '🔧\9x  6\A'
+      '⚙️\9x 10\A'
+      '🦾\9x 20\A'
+      '🤖\9x 60\A'
+      '🎰\9x100';
+    style(--class: paytable):
+      'P\0332\2006\0332 A\0332\2006\0332Y\0332\2006\0332T\0332\2006\0332 A\0332\2006\0332 B\0332\2006\0332L\0332\2006\0332 E\0332\A'
+      '🍒\9x  2\A'
+      '🍋\9x  3\A'
+      '🍊\9x  5\A'
+      '🔔\9x 10\A'
+      '⭐\9x 30\A'
+      '\2005 7\9x 50';
+    style(--class: status-panel):
+      'BONUS\9' if(style(--is-bonus-match: 1): '10';else: counter(bonus-count, decimal-negative-hyphen)) '/10\A'
+      'FREE\9 ' if(style(--is-free-match: 1): '10';else: counter(free-count, decimal-negative-hyphen))  '/10';
+    style((--class: footer) and (var(--time) < 100)):
+      '★ Welcome to CSS Casino — Pure CSS, Zero HTML&JavaScript ★    '
+      'Works on latest Chrome, Edge, Opera. Other browsers may not render correctly.    '
+      'Best on desktop. Mobile reels spin, but bet/count may glitch.    '
+      'The 10-count progressions may drift slightly due to browser timing.    '
+      'Tip: keep the mouse still while loading for best results.    '
+      'If the layout looks broken on first load, refresh once or twice.    '
+      'Press "play" to spin. Hit "stop!!" to halt each reel.    '
+      'Enjoy!';
+    style(--class: footer):
+      '★ CSS Casino ★    '
+      'Press "play" to spin the reels.    '
+      'Long-press "bet" to cycle wagers (1, 2, 3, 5, 10, 40).    '
+      'Match 3 symbols on any of 5 lines to win.    '
+      '3x BONUS triggers MACHINES mode — symbols turn mechanical, wins doubled for 10 spins.    '
+      '3x FREE gives you 10 free spins.    '
+      'Hit BONUS again during MACHINES to refresh your 10 spins.    '
+      'State Hoisting, in pure CSS.    '
+      '100% Pure CSS Slot Machines.    '
+      'Good luck! ★';
+    else: '';
+  );
+  grid-column: if(
+    style(--class: play-button): 3;
+    style(--class: status-panel): 1 / -1;
+  );
+  align-self: --class(footer, end, .);
+  white-space: if(
+    style(--class: win-display): pre;
+    style(--class: paytable): pre;
+    style(--class: status-panel): pre;
+    style(--class: footer): pre;
+  );
+  word-spacing: --class(footer, .3ch, .);
+  tab-size: if(
+    style(--class: paytable): 5ch;
+    style(--class: status-panel): 12ch;
+  );
+  text-align: --class(paytable, center, .);
+  display: if(
+    style(--role: reel-face): grid;
+    style(--element: button): grid;
+    style(--class: win-display): grid;
+    style(--class: status-panel): grid;
+    else: block;
+  );
+  place-items: if(
+    style(--role: reel-face): center;
+    style(--element: button): center;
+    style(--class: win-display): center;
+    style(--class: status-panel): center normal;
+  );
+  visibility: if(
+    style((--class: win-display) and (--is-win-visible: 0)): hidden;
+  );
+  opacity: if(
+    style((--class: win-display) and (0 < var(--win-timer) < 1)): calc((1 - cos(var(--win-timer) * 360deg)) / 2);
+    style(--class: win-display): 0;
+  );
+  anchor-name: if(
+    style(--class: reel1): --reel1;
+    style(--class: reel2): --reel2;
+    style(--class: reel3): --reel3;
+  );
+  position: if(
+    style(--role: reel-face): absolute;
+    style(--class: slot-background): absolute;
+    style(--role: reel-border): absolute;
+    style(--class: win-display): absolute;
+    style(--class: header): absolute;
+    style(--class: paytable): absolute;
+    style(--class: footer): absolute;
+  );
+  position-anchor: if(
+    style(--class: reel1-face): --reel1;
+    style(--class: reel2-face): --reel2;
+    style(--class: reel3-face): --reel3;
+    style(--role: reel-border): --reel2;
+  );
+  position-area: if(
+    style(--role: reel-face): center;
+    style(--class: reel-border-top): top;
+    style(--class: reel-border-bottom): bottom;
+  );
+  bottom: --class(reel-border-top, 2dvmin, .);
+  top: --class(reel-border-bottom, 2dvmin, .);
+  left: --class(paytable, 100%, .);
+  width: if(
+    style(--role: reel-face): stretch;
+    style(--class: slot-background): stretch;
+    style(--role: reel-border): 50dvmin;
+    style(--class: win-display): stretch;
+    style(--class: header): stretch;
+    style(--class: footer): stretch;
+  );
+  height: if(
+    style(--role: reel-face): 10dvmin;
+    style(--class: slot-background): stretch;
+    style(--class: win-display): stretch;
+  );
+  padding: if(
+    style(--class: header): 0 1dvmin;
+    style(--class: paytable): 3dvmin 7dvmin;
+    style(--class: status-panel): 0 2dvmin;
+  );
+  margin: if(
+    style(--role: reel-button): 2dvmin 1dvmin 0;
+    style(--class: paytable): 8dvmin;
+  );
+  background: if(
+    style(--role: reel-face): oklch(65% 20% calc(18deg * --sibling-index()));
+    style(--class: slot-background):
+      repeating-linear-gradient(60deg, transparent, var(--hatch-color), transparent 5dvmin),
+      repeating-linear-gradient(-30deg, transparent, var(--hatch-color), transparent 5dvmin),
+      var(--surface-color);
+    style(--class: status-panel): #fff4;
+    style(--role: reel-button): oklch(65% 40% 30deg);
+    style(--class: bet-button): oklch(65% 40% 180deg);
+    style(--class: play-button): oklch(65% 40% 150deg);
+    style(--class: paytable): repeating-linear-gradient(135deg, var(--surface-color), var(--hatch-color), var(--surface-color) 30dvmin);
+    style(--class: footer): black;
+  );
+  filter: if(
+    style((--role: reel-button) and (--reel-state: stopped)): brightness(50%);
+    style((--class: bet-button) and (--is-bet-disabled: 1)): brightness(50%);
+    style((--class: play-button) and (--slot-state: rolling)): brightness(50%);
+    style((--role: reel-face) and (--slot-state: stopped)): brightness(50%);
+  );
+  font-size: if(
+    style(--class: win-display): 8dvmin;
+    style(--role: reel-face): 3dvmin;
+    style(--role: reel-button): 2dvmin;
+    style(--class: bet-button): 2dvmin;
+    style(--class: play-button): 2dvmin;
+    style(--class: paytable): 3.5dvmin;
+    style(--class: status-panel): 2.5dvmin;
+    style(--class: footer): 2dvmin;
+  );
+  font-family: if(
+    style(--class: win-display): Impact;
+    style(--role: reel-face): Impact;
+    style(--element: button): 'Courier New bold';
+    style(--class: paytable): monospace, Geneva;
+  );
+  line-height: --class(paytable, 2, .);
+  text-shadow: --class(win-display, 0 0 6px white, .);
+  outline: if(
+    style(--role: reel-face): solid;
+    style(--class: paytable): solid;
+    style(--class: status-panel): solid;
+    style(--element: button): solid gray;
+  );
+  box-shadow: --element(button, 1px 1px 4px rgba(0, 0, 0, .3), .);
+  border-radius: if(
+    style(--role: reel-button): 3dvmin;
+    style(--element: button): 1dvmin;
+    style(--class: paytable): 3dvmin;
+    style(--class: status-panel): 1dvmin;
+    style(--class: slot-background): 1.5dvmin;
+    style(--class: footer): 0 0 1.5dvmin 1.5dvmin;
+  );
+  border-top: if(
+    style(--class: reel-border-bottom): solid;
+    style(--class: footer): solid dimgray;
+  );
+  border-bottom: if(
+    style(--class: reel-border-top): solid;
+    style(--class: header): solid 1px;
+  );
+  z-index: if(
+    style(--role: reel-face): -2;
+    style(--class: slot-background): -1;
+  );
+  pointer-events: if(
+    style((--role: reel-button) and (--reel-state: rolling)): all;
+    style((--class: bet-button) and (--is-bet-disabled: 0)): all;
+    style((--class: play-button) and (--slot-state: stopped)): all;
+    style((--class: win-display) and (--is-win-visible: 1)): all;
+    else: none;
+  );
+  text-indent: --class(footer, var(--text-scroll), .);
+  transform: if(
+    style(--role: reel-face):
+      translateZ(calc(-4.1dvmin * tan(81deg)))
+      rotateX(calc(18deg * --sibling-index() - var(--roll-now)))
+      translateZ(calc(5dvmin * tan(81deg)));
+    style(--class: win-display): translateZ(5dvmin);
+  );
+  backface-visibility: --role(reel-face, hidden, .);
+  transition: if(
+    style((--role: reel-face) and (--reel-state: stopped)): transform 400ms;
+    style((--class: slot-background) or (--class: paytable)): --hatch-color 10s, --surface-color 10s;
+  );
+}
+
+::column::scroll-marker:hover {
+  filter: brightness(80%);
+}
+
+::column::scroll-marker:active {
+  transition: pointer-events linear 75ms allow-discrete;
+  pointer-events: none;
+}
+
+::column::scroll-marker:hover:active {
+  counter-increment: active-index --sibling-index();
+}
+
+@counter-style classic-symbols {
+  system: fixed 0;
+  symbols: '🍒' '🍋' '🍊' '🔔' '⭐' '7' 'FREE' 'BONUS';
+}
+@counter-style bonus-symbols {
+  system: fixed 0;
+  symbols: '🔩' '🔧' '⚙️' '🦾' '🤖' '🎰' 'FREE' 'BONUS';
+}
+@counter-style decimal-negative-hyphen {
+  system: extends decimal;
+  range: 0 infinite;
+  fallback: hyphen;
+}
+@counter-style hyphen {
+  system: cyclic;
+  symbols: '-';
+}
+@counter-style encode0 {
+  system: symbolic;
+  symbols: '　';
+  fallback: -none;
+}
+@counter-style encode1 {
+  system: symbolic;
+  symbols: ' ';
+  fallback: -none;
+}
+@counter-style -none {
+  system: cyclic;
+  symbols: '';
+}
+
+@function --sibling-count() returns <integer> {
+  result: var(--sibling-count);
+}
+@function --sibling-index() returns <integer> {
+  result: var(--sibling-index);
+}
+@function --loaded(--value, --fallback) {
+  result: if(
+    style(--is-loaded: 1): var(--value);
+    style(--fallback: .):;
+    else: var(--fallback);
+  );
+}
+@function --element(--target-element <custom-ident>, --match-value, --fallback) {
+  result: if(
+    style(--element: var(--target-element)): var(--match-value);
+    style(--fallback: .):;
+    else: var(--fallback);
+  );
+}
+@function --role(--target-role <custom-ident>, --match-value, --fallback) {
+  result: if(
+    style(--role: var(--target-role)): var(--match-value);
+    style(--fallback: .):;
+    else: var(--fallback);
+  );
+}
+@function --class(--target-class <custom-ident>, --match-value, --fallback) {
+  result: if(
+    style(--class: var(--target-class)): var(--match-value);
+    style(--fallback: .):;
+    else: var(--fallback);
+  );
+}
+@function --active-class(--target-class <custom-ident>, --match-value, --fallback) {
+  result: if(
+    style(--active-class: var(--target-class)): var(--match-value);
+    style(--fallback: .):;
+    else: var(--fallback);
+  );
+}
+@function --decode(--k <integer>) returns <integer> {
+  --x: round(1 / var(--decode) - 1);
+  result: if(
+    style(--k: 0): mod(var(--x), 121);
+    style(--k: 1): round(down, var(--x) / 121);
+  );
+}
+@function --get-bit(--x <integer>, --k <integer>) returns <integer> {
+  result: mod(round(down, var(--x) / pow(2, var(--k))), 2);
+}
+@function --get-symbol-num(--num <integer>, --seed <number>) {
+  --_symbol-num: mod(--random(var(--num), var(--seed)), 20);
+  result: if(
+    style(0 <= var(--_symbol-num) < 5): 0;
+    style(5 <= var(--_symbol-num) < 9): 1;
+    style(9 <= var(--_symbol-num) < 12): 2;
+    style(12 <= var(--_symbol-num) < 15): 3;
+    style(15 <= var(--_symbol-num) < 17): 4;
+    style(17 <= var(--_symbol-num) < 18): 5;
+    style(18 <= var(--_symbol-num) < 19): 6;
+    style(19 <= var(--_symbol-num) < 20): 7;
+  );
+}
+@function --symbol-rate(--symbol <integer>) returns <integer> {
+  result: if(
+    style(--symbol: 0): 2;
+    style(--symbol: 1): 3;
+    style(--symbol: 2): 5;
+    style(--symbol: 3): 10;
+    style(--symbol: 4): 30;
+    style(--symbol: 5): 50;
+    else: 0;
+  );
+}
+
+@function --to-class(--index <integer>) returns <custom-ident> {
+  result: if(
+    style(--index: 1): reel1;
+    style(--index: 2): reel2;
+    style(--index: 3): reel3;
+    style(3 < var(--index) <= 23): reel1-face;
+    style(23 < var(--index) <= 43): reel2-face;
+    style(43 < var(--index) <= 63): reel3-face;
+    style(--index: 64): slot-background;
+    style(--index: 65): reel-border-top;
+    style(--index: 66): reel-border-bottom;
+    style(--index: 67): reel1-button;
+    style(--index: 68): reel2-button;
+    style(--index: 69): reel3-button;
+    style(--index: 70): bet-button;
+    style(--index: 71): play-button;
+    style(--index: 72): win-display;
+    style(--index: 73): header;
+    style(--index: 74): paytable;
+    style(--index: 75): status-panel;
+    style(--index: 76): footer;
+  );
+}
+@function --to-role(--class <custom-ident>) returns <custom-ident> {
+  result: if(
+    style(
+      (--class: reel1) or
+      (--class: reel2) or
+      (--class: reel3)): reel;
+    style(
+      (--class: reel1-face) or
+      (--class: reel2-face) or
+      (--class: reel3-face)): reel-face;
+    style(
+      (--class: reel-border-top) or
+      (--class: reel-border-bottom)): reel-border;
+    style(
+      (--class: reel1-button) or
+      (--class: reel2-button) or
+      (--class: reel3-button)): reel-button;
+  );
+}
+@function --to-element(--role <custom-ident>, --class <custom-ident>) returns <custom-ident> {
+  result: if(
+    style(--role: reel): section;
+    style(
+      (--role: reel-button) or
+      (--class: bet-button) or
+      (--class: play-button)): button;
+    style(--class: paytable): aside;
+    style(--class: header): header;
+    style(--class: footer): footer;
+    else: div;
+  );
+}
+@function --random(--num <integer>, --seed <number>) returns <integer> {
+  result: round(mod(524287 * sin(999983 * (var(--num) + 5007)) * (91 + 29 * cos(524287 * var(--seed))), 8191));
+}
+
+@keyframes time {
+  to { --time: 999999 }
+}
+@keyframes sibling-init {
+  to { --_sibling-i: var(--n) }
+}
+@keyframes decode {
+  from { --decode: 0 }
+  to { --decode: 1 }
+}
+@keyframes bet-mode-shift {
+  to { --bet-mode: 6 }
+}
+@keyframes bonus-count-shift {
+  from { --bonus-count: 10 }
+  to { --bonus-count: 0 }
+}
+@keyframes free-count-shift {
+  from { --free-count: 10 }
+  to { --free-count: 0 }
+}
+@keyframes scroll-text {
+  to {
+    --text-scroll: -310ch;
+  }
+}
+@keyframes roll1 {
+  to { --roll1: 1turn }
+}
+@keyframes roll2 {
+  to { --roll2: 1turn }
+}
+@keyframes roll3 {
+  to { --roll3: 1turn }
+}
+@keyframes stop-roll1 {
+  to { --is-roll1-stopped: 1 }
+}
+@keyframes stop-roll2 {
+  to { --is-roll2-stopped: 1 }
+}
+@keyframes stop-roll3 {
+  to { --is-roll3-stopped: 1 }
+}
+
+@property --time {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --_sibling-i {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --sibling-count {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --sibling-index {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --is-loaded {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --decode {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --bet-mode {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --bonus-count {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: -1;
+}
+@property --free-count {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: -1;
+}
+@property --win {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --win-timer {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --roll1 {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+@property --roll2 {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+@property --roll3 {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+@property --is-roll1-stopped {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --is-roll2-stopped {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --is-roll3-stopped {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --hatch-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --surface-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --text-scroll {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
