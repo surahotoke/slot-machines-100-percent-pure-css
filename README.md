@@ -3,7 +3,7 @@
 A fully functional slot machine built with **pure CSS**.
 
 - ✅ 10 lines of HTML (just an empty body)
-- ✅ 854 lines of CSS
+- ✅ 872 lines of CSS
 - ✅ **0 lines of JavaScript**
 
 Submitted to [Gamedev.js Jam 2026](https://itch.io/jam/gamedevjs-2026) — theme: **Machines**.

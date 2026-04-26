@@ -1,4 +1,21 @@
+:root {
+  --root-bg: linen;
+  --title-bg: #f00a;
+  --reel-button-bg: oklch(65% 40% 30deg);
+  --bet-button-bg: oklch(65% 40% 180deg);
+  --play-button-bg: oklch(65% 40% 150deg);
+  --status-panel-bg: #fff4;
+  --footer-bg: black;
+  --button-color: white;
+  --footer-color: var(--root-bg);
+  --normal-hatch-color: silver;
+  --normal-surface-color: lightgray;
+  --bonus-hatch-color: gold;
+  --bonus-surface-color: palegoldenrod;
+}
+
 html {
+  background: var(--root-bg);
   overflow: hidden;
   animation: decode linear, time 999999s linear both;
   animation-timeline: scroll(self x), auto;
@@ -161,12 +178,12 @@ body {
     else: bonus;
   );
   --hatch-color: if(
-    style(--slot-mode: bonus): gold;
-    else: silver;
+    style(--slot-mode: bonus): var(--bonus-hatch-color);
+    else: var(--normal-hatch-color);
   );
   --surface-color: if(
-    style(--slot-mode: bonus): palegoldenrod;
-    else: lightgray;
+    style(--slot-mode: bonus): var(--bonus-surface-color);
+    else: var(--normal-surface-color);
   );
   --is-free-mode: if(
     style((--free-count: -1) and (--is-free-match: 0)): 0;
@@ -227,7 +244,7 @@ body::before {
   position: absolute;
   position-anchor: --main;
   position-area: center;
-  background: #f00a;
+  background: var(--title-bg);
   width: stretch;
   height: stretch;
   border-radius: 2dvmin;
@@ -291,8 +308,8 @@ body::after {
 ::column::scroll-marker {
   text-decoration: none;
   color: if(
-    style(--element: button): white;
-    style(--class: footer): white;
+    style(--element: button): var(--button-color);
+    style(--class: footer): var(--footer-color);
     else: black;
   );
   counter-reset: --role(reel-face, symbol-num --get-symbol-num(mod(--sibling-index(), 20), var(--seed)), .);
@@ -447,12 +464,12 @@ body::after {
       repeating-linear-gradient(60deg, transparent, var(--hatch-color), transparent 5dvmin),
       repeating-linear-gradient(-30deg, transparent, var(--hatch-color), transparent 5dvmin),
       var(--surface-color);
-    style(--class: status-panel): #fff4;
-    style(--role: reel-button): oklch(65% 40% 30deg);
-    style(--class: bet-button): oklch(65% 40% 180deg);
-    style(--class: play-button): oklch(65% 40% 150deg);
+    style(--role: reel-button): var(--reel-button-bg);
+    style(--class: bet-button): var(--bet-button-bg);
+    style(--class: play-button): var(--play-button-bg);
+    style(--class: status-panel): var(--status-panel-bg);
+    style(--class: footer): var(--footer-bg);
     style(--class: paytable): repeating-linear-gradient(135deg, var(--surface-color), var(--hatch-color), var(--surface-color) 30dvmin);
-    style(--class: footer): black;
   );
   filter: if(
     style((--role: reel-button) and (--reel-state: stopped)): brightness(50%);
@@ -468,6 +485,7 @@ body::after {
     style(--class: play-button): 2dvmin;
     style(--class: paytable): 3.5dvmin;
     style(--class: status-panel): 2.5dvmin;
+    style(--class: header): 2dvmin;
     style(--class: footer): 2dvmin;
   );
   font-family: if(
